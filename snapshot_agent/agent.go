@@ -60,7 +60,10 @@ func (s *Snapshotter) ConfigureVaultClient(config *config.Configuration) error {
 	vaultConfig := vaultApi.DefaultConfig()
 	vaultConfig.Address = config.Address
 	tlsConfig := &vaultApi.TLSConfig{
-		Insecure: true,
+		CACert:     config.Vault.CACert,
+		ClientCert: config.Vault.ClientCert,
+		ClientKey:  config.Vault.ClientKey,
+		Insecure:   config.Vault.Insecure,
 	}
 	vaultConfig.ConfigureTLS(tlsConfig)
 	api, err := vaultApi.NewClient(vaultConfig)
@@ -74,8 +77,8 @@ func (s *Snapshotter) ConfigureVaultClient(config *config.Configuration) error {
 
 func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) error {
 	data := map[string]interface{}{
-		"role_id":   config.RoleID,
-		"secret_id": config.SecretID,
+		"role_id":   config.Vault.RoleID,
+		"secret_id": config.Vault.SecretID,
 	}
 	resp, err := s.API.Logical().Write("auth/approle/login", data)
 	if err != nil {

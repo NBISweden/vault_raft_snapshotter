@@ -11,15 +11,13 @@ import (
 
 // Configuration is the overall config object
 type Configuration struct {
-	Address   string      `json:"addr"`
 	Retain    int64       `json:"retain"`
 	Frequency string      `json:"frequency"`
 	AWS       S3Config    `json:"aws_storage"`
 	Local     LocalConfig `json:"local_storage"`
 	GCP       GCPConfig   `json:"google_storage"`
 	Azure     AzureConfig `json:"azure_storage"`
-	RoleID    string      `json:"role_id"`
-	SecretID  string      `json:"secret_id"`
+	Vault     VaultConfig `json:"vault_config"`
 }
 
 // AzureConfig is the configuration for Azure blob snapshots
@@ -51,6 +49,18 @@ type S3Config struct {
 	SSE                bool   `json:"s3_server_side_encryption"`
 	StaticSnapshotName string `json:"s3_static_snapshot_name"`
 	S3ForcePathStyle   bool   `json:"s3_force_path_style"`
+}
+
+// VaultConfig is the configuration for connecting to Vault
+type VaultConfig struct {
+	Address    string `json:"address"`
+	CACert     string `json:"ca_cert"`
+	ClientCert string `json:"client_cert"`
+	ClientKey  string `json:"client_key"`
+	Insecure   bool   `json:"insecure"`
+	RoleID     string `json:"role_id"`
+	SecretID   string `json:"secret_id"`
+	TokenFile  string `json:"token_file"`
 }
 
 // ReadConfig reads the configuration file
