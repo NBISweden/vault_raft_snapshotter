@@ -49,7 +49,7 @@ func main() {
 		log.Fatalln("Error retrieving Current instance IP.  Verify internet connectivity.")
 	}
 	for {
-		if snapshotter.TokenExpiration.Before(time.Now()) {
+		if snapshotter.TokenExpiration.Before(time.Now()) && (c.Vault.RoleID != "" && c.Vault.SecretID != "") {
 			snapshotter.SetClientTokenFromAppRole(c)
 		}
 		leader, err := snapshotter.API.Sys().Leader()

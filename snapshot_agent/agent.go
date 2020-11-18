@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -73,7 +74,23 @@ func (s *Snapshotter) ConfigureVaultClient(config *config.Configuration) error {
 		return err
 	}
 	s.API = api
-	s.SetClientTokenFromAppRole(config)
+
+	if config.Vault.RoleID != "" && config.Vault.SecretID != "" {
+		s.SetClientTokenFromAppRole(config)
+	} else {
+		s.SetClientTokenFromFile(config)
+	}
+
+	return nil
+}
+
+func (s *Snapshotter) SetClientTokenFromFile(config *config.Configuration) error {
+	t, err := ioutil.ReadFile(config.Vault.TokenFile)
+	if err != nil {
+		fmt.Print(err)
+	}
+	s.API.SetToken(string(t))
+	s.TokenExpiration = time.Now().Add(time.Duration(time.Hour))
 	return nil
 }
 
