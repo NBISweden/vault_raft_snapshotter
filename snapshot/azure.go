@@ -36,7 +36,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 			return url, err
 		}
 		blobs := res.Segment.BlobItems
-		timestamp := func(o1, o2 *azblob.BlobItem) bool {
+		timestamp := func(o1, o2 *azblob.BlobItemInternal) bool {
 			return o1.Properties.LastModified.Before(o2.Properties.LastModified)
 		}
 		azureBy(timestamp).sort(blobs)
@@ -59,9 +59,9 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 }
 
 // implementation of Sort interface for s3 objects
-type azureBy func(f1, f2 *azblob.BlobItem) bool
+type azureBy func(f1, f2 *azblob.BlobItemInternal) bool
 
-func (by azureBy) sort(objects []azblob.BlobItem) {
+func (by azureBy) sort(objects []azblob.BlobItemInternal) {
 	fs := &azObjectSorter{
 		objects: objects,
 		by:      by, // The Sort method's receiver is the function (closure) that defines the sort order.
@@ -70,8 +70,8 @@ func (by azureBy) sort(objects []azblob.BlobItem) {
 }
 
 type azObjectSorter struct {
-	objects []azblob.BlobItem
-	by      func(f1, f2 *azblob.BlobItem) bool // Closure used in the Less method.
+	objects []azblob.BlobItemInternal
+	by      func(f1, f2 *azblob.BlobItemInternal) bool // Closure used in the Less method.
 }
 
 func (s *azObjectSorter) Len() int {
