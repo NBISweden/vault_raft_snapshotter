@@ -62,30 +62,32 @@ func main() {
 
 		if !leader.IsSelf {
 			log.Infoln("Not running on leader node, skipping.")
-		} else {
-			var snapshot bytes.Buffer
-			err := snapshotter.API.Sys().RaftSnapshot(&snapshot)
-			if err != nil {
-				log.Fatalln("Unable to generate snapshot", err.Error())
-			}
-			now := time.Now().UnixNano()
-			if c.Local.Path != "" {
-				snapshotPath, err := snapshotter.CreateLocalSnapshot(&snapshot, c, now)
-				logSnapshotError("local", snapshotPath, err)
-			}
-			if c.AWS.Bucket != "" {
-				snapshotPath, err := snapshotter.CreateS3Snapshot(&snapshot, c, now)
-				logSnapshotError("aws", snapshotPath, err)
-			}
-			if c.GCP.Bucket != "" {
-				snapshotPath, err := snapshotter.CreateGCPSnapshot(&snapshot, c, now)
-				logSnapshotError("gcp", snapshotPath, err)
-			}
-			if c.Azure.ContainerName != "" {
-				snapshotPath, err := snapshotter.CreateAzureSnapshot(&snapshot, c, now)
-				logSnapshotError("azure", snapshotPath, err)
-			}
+			break
 		}
+
+		var snapshot bytes.Buffer
+		err = snapshotter.API.Sys().RaftSnapshot(&snapshot)
+		if err != nil {
+			log.Fatalln("Unable to generate snapshot", err.Error())
+		}
+		now := time.Now().UnixNano()
+		if c.Local.Path != "" {
+			snapshotPath, err := snapshotter.CreateLocalSnapshot(&snapshot, c, now)
+			logSnapshotError("local", snapshotPath, err)
+		}
+		if c.AWS.Bucket != "" {
+			snapshotPath, err := snapshotter.CreateS3Snapshot(&snapshot, c, now)
+			logSnapshotError("aws", snapshotPath, err)
+		}
+		if c.GCP.Bucket != "" {
+			snapshotPath, err := snapshotter.CreateGCPSnapshot(&snapshot, c, now)
+			logSnapshotError("gcp", snapshotPath, err)
+		}
+		if c.Azure.ContainerName != "" {
+			snapshotPath, err := snapshotter.CreateAzureSnapshot(&snapshot, c, now)
+			logSnapshotError("azure", snapshotPath, err)
+		}
+
 		select {
 		case <-time.After(frequency):
 			continue
