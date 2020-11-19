@@ -36,8 +36,11 @@ func main() {
 	}
 
 	snapshotter, err := snapshot.NewSnapshotter(c)
-	frequency, err := time.ParseDuration(c.Frequency)
+	if err != nil {
+		log.Fatalln("Failed to create snapshotter")
+	}
 
+	frequency, err := time.ParseDuration(c.Frequency)
 	if err != nil {
 		frequency = time.Hour
 	}
