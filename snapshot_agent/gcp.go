@@ -48,7 +48,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 			return o1.Updated.Before(o2.Updated)
 		}
 
-		GCPBy(timestamp).Sort(files)
+		gcpBy(timestamp).sort(files)
 		if len(files)-int(config.Retain) <= 0 {
 			return fileName, nil
 		}
@@ -67,9 +67,9 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 }
 
 // implements a Sort interface for s3 objects
-type GCPBy func(f1, f2 *storage.ObjectAttrs) bool
+type gcpBy func(f1, f2 *storage.ObjectAttrs) bool
 
-func (by GCPBy) Sort(objects []storage.ObjectAttrs) {
+func (by gcpBy) sort(objects []storage.ObjectAttrs) {
 	fs := &gcpObjectSorter{
 		objects: objects,
 		by:      by, // The Sort method's receiver is the function (closure) that defines the sort order.

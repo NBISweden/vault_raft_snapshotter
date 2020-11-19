@@ -64,7 +64,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 			timestamp := func(o1, o2 *s3.Object) bool {
 				return o1.LastModified.Before(*o2.LastModified)
 			}
-			S3By(timestamp).Sort(existingSnapshots)
+			s3By(timestamp).sort(existingSnapshots)
 			if len(existingSnapshots)-int(config.Retain) <= 0 {
 				return o.Location, nil
 			}
@@ -86,9 +86,9 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 }
 
 // implements a Sort interface for s3 objects
-type S3By func(f1, f2 *s3.Object) bool
+type s3By func(f1, f2 *s3.Object) bool
 
-func (by S3By) Sort(objects []s3.Object) {
+func (by s3By) sort(objects []s3.Object) {
 	fs := &s3ObjectSorter{
 		objects: objects,
 		by:      by, // The Sort method's receiver is the function (closure) that defines the sort order.

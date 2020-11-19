@@ -37,12 +37,13 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 				file2 := *f2
 				return file1.ModTime().Before(file2.ModTime())
 			}
-			By(timestamp).Sort(filesToDelete)
+			fileBy(timestamp).sort(filesToDelete)
 			if len(filesToDelete) <= int(config.Retain) {
 				return fileName, nil
 			}
 			filesToDelete = filesToDelete[0 : len(filesToDelete)-int(config.Retain)]
 			for _, f := range filesToDelete {
+				log.Debugf("Deleting old snapshot %s", f.Name())
 				os.Remove(fmt.Sprintf("%s/%s", config.Local.Path, f.Name()))
 			}
 		}
@@ -51,9 +52,9 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 }
 
 // implements a Sort interface for fileInfo
-type By func(f1, f2 *os.FileInfo) bool
+type fileBy func(f1, f2 *os.FileInfo) bool
 
-func (by By) Sort(files []os.FileInfo) {
+func (by fileBy) sort(files []os.FileInfo) {
 	fs := &fileSorter{
 		files: files,
 		by:    by, // The Sort method's receiver is the function (closure) that defines the sort order.

@@ -38,7 +38,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 			timestamp := func(o1, o2 *azblob.BlobItem) bool {
 				return o1.Properties.LastModified.Before(o2.Properties.LastModified)
 			}
-			AzureBy(timestamp).Sort(blobs)
+			azureBy(timestamp).sort(blobs)
 			if len(blobs)-int(config.Retain) <= 0 {
 				return url, nil
 			}
@@ -58,9 +58,9 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 }
 
 // implementation of Sort interface for s3 objects
-type AzureBy func(f1, f2 *azblob.BlobItem) bool
+type azureBy func(f1, f2 *azblob.BlobItem) bool
 
-func (by AzureBy) Sort(objects []azblob.BlobItem) {
+func (by azureBy) sort(objects []azblob.BlobItem) {
 	fs := &azObjectSorter{
 		objects: objects,
 		by:      by, // The Sort method's receiver is the function (closure) that defines the sort order.

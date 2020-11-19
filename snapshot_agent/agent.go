@@ -35,24 +35,24 @@ type Snapshotter struct {
 // NewSnapshotter creates a new snaphotter instance
 func NewSnapshotter(config *config.Configuration) (*Snapshotter, error) {
 	snapshotter := &Snapshotter{}
-	err := snapshotter.ConfigureVaultClient(config)
+	err := snapshotter.configureVaultClient(config)
 	if err != nil {
 		return nil, err
 	}
 	if config.AWS.Bucket != "" {
-		err = snapshotter.ConfigureS3(config)
+		err = snapshotter.configureS3(config)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if config.GCP.Bucket != "" {
-		err = snapshotter.ConfigureGCP(config)
+		err = snapshotter.configureGCP(config)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if config.Azure.ContainerName != "" {
-		err = snapshotter.ConfigureAzure(config)
+		err = snapshotter.configureAzure(config)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +60,7 @@ func NewSnapshotter(config *config.Configuration) (*Snapshotter, error) {
 	return snapshotter, nil
 }
 
-func (s *Snapshotter) ConfigureVaultClient(config *config.Configuration) error {
+func (s *Snapshotter) configureVaultClient(config *config.Configuration) error {
 	vaultConfig := vaultApi.DefaultConfig()
 	if config.Vault.Address != "" {
 		vaultConfig.Address = config.Vault.Address
@@ -81,13 +81,13 @@ func (s *Snapshotter) ConfigureVaultClient(config *config.Configuration) error {
 	if config.Vault.RoleID != "" && config.Vault.SecretID != "" {
 		s.SetClientTokenFromAppRole(config)
 	} else {
-		s.SetClientTokenFromFile(config)
+		s.setClientTokenFromFile(config)
 	}
 
 	return nil
 }
 
-func (s *Snapshotter) SetClientTokenFromFile(config *config.Configuration) error {
+func (s *Snapshotter) setClientTokenFromFile(config *config.Configuration) error {
 	t, err := ioutil.ReadFile(config.Vault.TokenFile)
 	if err != nil {
 		fmt.Print(err)
@@ -112,7 +112,7 @@ func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) er
 	return nil
 }
 
-func (s *Snapshotter) ConfigureS3(config *config.Configuration) error {
+func (s *Snapshotter) configureS3(config *config.Configuration) error {
 	awsConfig := &aws.Config{Region: aws.String(config.AWS.Region)}
 
 	if config.AWS.AccessKeyID != "" && config.AWS.SecretAccessKey != "" {
@@ -133,7 +133,7 @@ func (s *Snapshotter) ConfigureS3(config *config.Configuration) error {
 	return nil
 }
 
-func (s *Snapshotter) ConfigureGCP(config *config.Configuration) error {
+func (s *Snapshotter) configureGCP(config *config.Configuration) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -143,7 +143,7 @@ func (s *Snapshotter) ConfigureGCP(config *config.Configuration) error {
 	return nil
 }
 
-func (s *Snapshotter) ConfigureAzure(config *config.Configuration) error {
+func (s *Snapshotter) configureAzure(config *config.Configuration) error {
 	accountName := config.Azure.AccountName
 	if os.Getenv("AZURE_STORAGE_ACCOUNT") != "" {
 		accountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
