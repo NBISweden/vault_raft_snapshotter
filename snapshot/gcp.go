@@ -1,4 +1,4 @@
-package snapshot_agent
+package snapshot
 
 import (
 	"bytes"

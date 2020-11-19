@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
-	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot_agent"
+	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot"
 )
 
 func listenForInterruptSignals() chan bool {
@@ -35,7 +35,7 @@ func main() {
 		log.Fatalln("Configuration could not be found")
 	}
 
-	snapshotter, err := snapshot_agent.NewSnapshotter(c)
+	snapshotter, err := snapshot.NewSnapshotter(c)
 	frequency, err := time.ParseDuration(c.Frequency)
 
 	if err != nil {
