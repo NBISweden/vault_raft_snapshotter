@@ -19,7 +19,7 @@ func listenForInterruptSignals() chan bool {
 	done := make(chan bool, 1)
 
 	go func() {
-		_ = <-sigs
+		<-sigs
 		done <- true
 	}()
 	return done
@@ -30,7 +30,6 @@ func main() {
 
 	log.Infoln("Reading configuration...")
 	c, err := config.ReadConfig()
-
 	if err != nil {
 		log.Fatalln("Configuration could not be found")
 	}
