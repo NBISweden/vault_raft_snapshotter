@@ -31,15 +31,6 @@ func main() {
 			log.Fatalf("Unable to login to vault")
 		}
 	}
-	leader, err := snapshotter.API.Sys().Leader()
-	if err != nil {
-		log.Errorln(err.Error())
-		log.Fatalln("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
-	}
-
-	if !leader.IsSelf {
-		log.Fatalln("Not running on leader node, exiting.")
-	}
 
 	var snapshot bytes.Buffer
 	err = snapshotter.API.Sys().RaftSnapshot(&snapshot)
