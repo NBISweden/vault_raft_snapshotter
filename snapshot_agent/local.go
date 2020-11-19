@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 )
@@ -28,7 +29,7 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 				}
 			}
 			if err != nil {
-				log.Println("Unable to read file directory to delete old snapshots")
+				log.Errorln("Unable to read file directory to delete old snapshots")
 				return fileName, err
 			}
 			timestamp := func(f1, f2 *os.FileInfo) bool {

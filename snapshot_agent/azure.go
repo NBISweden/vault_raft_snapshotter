@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"sort"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
@@ -30,7 +31,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 				MaxResults: 500,
 			})
 			if err != nil {
-				log.Println("Unable to iterate through bucket to find old snapshots to delete")
+				log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
 				return url, err
 			}
 			blobs := res.Segment.BlobItems
@@ -47,7 +48,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 				val := s.AzureUploader.NewBlockBlobURL(b.Name)
 				val.Delete(deleteCtx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 				if err != nil {
-					log.Println("Cannot delete old snapshot")
+					log.Errorln("Cannot delete old snapshot")
 					return url, err
 				}
 			}

@@ -3,8 +3,9 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
@@ -13,6 +14,7 @@ import (
 type Configuration struct {
 	Retain    int64       `json:"retain"`
 	Frequency string      `json:"frequency"`
+	LogLevel  string      `json:"log_level"`
 	AWS       S3Config    `json:"aws_storage"`
 	Local     LocalConfig `json:"local_storage"`
 	GCP       GCPConfig   `json:"google_storage"`
@@ -77,6 +79,17 @@ func ReadConfig() (*Configuration, error) {
 	err = json.Unmarshal(cBytes, &c)
 	if err != nil {
 		log.Fatalf("Cannot parse configuration file: %v", err.Error())
+	}
+	// set default log level to trace
+	log.SetLevel(log.TraceLevel)
+	if c.LogLevel != "" {
+		intLevel, err := log.ParseLevel(c.LogLevel)
+		if err != nil {
+			log.Errorf("Log level '%s' not supported, setting to 'trace'", c.LogLevel)
+			intLevel = log.TraceLevel
+		}
+		log.SetLevel(intLevel)
+		log.Infof("Setting log level to '%s'", c.LogLevel)
 	}
 	return c, nil
 }

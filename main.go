@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot_agent"
@@ -27,7 +28,7 @@ func listenForInterruptSignals() chan bool {
 func main() {
 	done := listenForInterruptSignals()
 
-	log.Println("Reading configuration...")
+	log.Infoln("Reading configuration...")
 	c, err := config.ReadConfig()
 
 	if err != nil {
@@ -50,12 +51,12 @@ func main() {
 		}
 		leader, err := snapshotter.API.Sys().Leader()
 		if err != nil {
-			log.Println(err.Error())
+			log.Errorln(err.Error())
 			log.Fatalln("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
 		}
 
 		if !leader.IsSelf {
-			log.Println("Not running on leader node, skipping.")
+			log.Infoln("Not running on leader node, skipping.")
 		} else {
 			var snapshot bytes.Buffer
 			err := snapshotter.API.Sys().RaftSnapshot(&snapshot)
@@ -91,8 +92,8 @@ func main() {
 
 func logSnapshotError(dest, snapshotPath string, err error) {
 	if err != nil {
-		log.Printf("Failed to generate %s snapshot to %s: %v\n", dest, snapshotPath, err)
+		log.Errorf("Failed to generate %s snapshot to %s: %v\n", dest, snapshotPath, err)
 	} else {
-		log.Printf("Successfully created %s snapshot to %s\n", dest, snapshotPath)
+		log.Infof("Successfully created %s snapshot to %s\n", dest, snapshotPath)
 	}
 }

@@ -3,9 +3,10 @@ package snapshot_agent
 import (
 	"fmt"
 	"io"
-	"log"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 	"github.com/aws/aws-sdk-go/aws"
@@ -45,7 +46,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 				Prefix: aws.String(keyPrefix),
 			})
 			if err != nil {
-				log.Println("Error when retrieving existing snapshots for delete action.")
+				log.Errorln("Error when retrieving existing snapshots for delete action.")
 				return o.Location, err
 			}
 			existingSnapshots := make([]s3.Object, 0)
@@ -75,7 +76,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 					Key:    snapshotsToDelete[i].Key,
 				})
 				if err != nil {
-					log.Printf("Error when deleting snapshot %s\n.", *snapshotsToDelete[i].Key)
+					log.Errorf("Error when deleting snapshot %s\n.", *snapshotsToDelete[i].Key)
 					return o.Location, err
 				}
 			}

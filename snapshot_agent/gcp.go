@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"sort"
+
+	log "github.com/sirupsen/logrus"
 
 	"cloud.google.com/go/storage"
 	"github.com/Lucretius/vault_raft_snapshot_agent/config"
@@ -37,7 +38,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 				break
 			}
 			if err != nil {
-				log.Println("Unable to iterate through bucket to find old snapshots to delete")
+				log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
 				return fileName, err
 			}
 			files = append(files, *attrs)
@@ -57,7 +58,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 			obj := s.GCPBucket.Object(ss.Name)
 			err := obj.Delete(deleteCtx)
 			if err != nil {
-				log.Println("Cannot delete old snapshot")
+				log.Errorln("Cannot delete old snapshot")
 				return fileName, err
 			}
 		}
