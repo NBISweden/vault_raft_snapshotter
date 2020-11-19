@@ -47,7 +47,9 @@ func main() {
 	}
 	for {
 		if snapshotter.TokenExpiration.Before(time.Now()) && (c.Vault.RoleID != "" && c.Vault.SecretID != "") {
-			snapshotter.SetClientTokenFromAppRole(c)
+			if err = snapshotter.SetClientTokenFromAppRole(c); err != nil {
+				log.Fatalf("Unable to login to vault")
+			}
 		}
 		leader, err := snapshotter.API.Sys().Leader()
 		if err != nil {
