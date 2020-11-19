@@ -12,14 +12,13 @@ import (
 
 // Configuration is the overall config object
 type Configuration struct {
-	Retain    int64       `json:"retain"`
-	Frequency string      `json:"frequency"`
-	LogLevel  string      `json:"log_level"`
-	AWS       S3Config    `json:"aws_storage"`
-	Local     LocalConfig `json:"local_storage"`
-	GCP       GCPConfig   `json:"google_storage"`
-	Azure     AzureConfig `json:"azure_storage"`
-	Vault     VaultConfig `json:"vault_config"`
+	Retain   int64       `json:"retain"`
+	LogLevel string      `json:"log_level"`
+	AWS      S3Config    `json:"aws_storage"`
+	Local    LocalConfig `json:"local_storage"`
+	GCP      GCPConfig   `json:"google_storage"`
+	Azure    AzureConfig `json:"azure_storage"`
+	Vault    VaultConfig `json:"vault_config"`
 }
 
 // AzureConfig is the configuration for Azure blob snapshots

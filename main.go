@@ -2,9 +2,6 @@ package main
 
 import (
 	"bytes"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,21 +10,7 @@ import (
 	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot"
 )
 
-func listenForInterruptSignals() chan bool {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan bool, 1)
-
-	go func() {
-		<-sigs
-		done <- true
-	}()
-	return done
-}
-
 func main() {
-	done := listenForInterruptSignals()
-
 	log.Infoln("Reading configuration...")
 	c, err := config.ReadConfig()
 	if err != nil {
@@ -39,61 +22,48 @@ func main() {
 		log.Fatalln("Failed to create snapshotter")
 	}
 
-	frequency, err := time.ParseDuration(c.Frequency)
-	if err != nil {
-		frequency = time.Hour
-	}
-
 	if err != nil {
 		log.Fatalln("Error retrieving Current instance IP.  Verify internet connectivity.")
 	}
-	for {
-		if snapshotter.TokenExpiration.Before(time.Now()) && (c.Vault.RoleID != "" && c.Vault.SecretID != "") {
-			if err = snapshotter.SetClientTokenFromAppRole(c); err != nil {
-				log.Fatalf("Unable to login to vault")
-			}
-		}
-		leader, err := snapshotter.API.Sys().Leader()
-		if err != nil {
-			log.Errorln(err.Error())
-			log.Fatalln("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
-		}
 
-		if !leader.IsSelf {
-			log.Infoln("Not running on leader node, skipping.")
-			break
-		}
-
-		var snapshot bytes.Buffer
-		err = snapshotter.API.Sys().RaftSnapshot(&snapshot)
-		if err != nil {
-			log.Fatalln("Unable to generate snapshot", err.Error())
-		}
-		now := time.Now().UnixNano()
-		if c.Local.Path != "" {
-			snapshotPath, err := snapshotter.CreateLocalSnapshot(&snapshot, c, now)
-			logSnapshotError("local", snapshotPath, err)
-		}
-		if c.AWS.Bucket != "" {
-			snapshotPath, err := snapshotter.CreateS3Snapshot(&snapshot, c, now)
-			logSnapshotError("aws", snapshotPath, err)
-		}
-		if c.GCP.Bucket != "" {
-			snapshotPath, err := snapshotter.CreateGCPSnapshot(&snapshot, c, now)
-			logSnapshotError("gcp", snapshotPath, err)
-		}
-		if c.Azure.ContainerName != "" {
-			snapshotPath, err := snapshotter.CreateAzureSnapshot(&snapshot, c, now)
-			logSnapshotError("azure", snapshotPath, err)
-		}
-
-		select {
-		case <-time.After(frequency):
-			continue
-		case <-done:
-			os.Exit(1)
+	if snapshotter.TokenExpiration.Before(time.Now()) && (c.Vault.RoleID != "" && c.Vault.SecretID != "") {
+		if err = snapshotter.SetClientTokenFromAppRole(c); err != nil {
+			log.Fatalf("Unable to login to vault")
 		}
 	}
+	leader, err := snapshotter.API.Sys().Leader()
+	if err != nil {
+		log.Errorln(err.Error())
+		log.Fatalln("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
+	}
+
+	if !leader.IsSelf {
+		log.Fatalln("Not running on leader node, exiting.")
+	}
+
+	var snapshot bytes.Buffer
+	err = snapshotter.API.Sys().RaftSnapshot(&snapshot)
+	if err != nil {
+		log.Fatalln("Unable to generate snapshot", err.Error())
+	}
+	now := time.Now().UnixNano()
+	if c.Local.Path != "" {
+		snapshotPath, err := snapshotter.CreateLocalSnapshot(&snapshot, c, now)
+		logSnapshotError("local", snapshotPath, err)
+	}
+	if c.AWS.Bucket != "" {
+		snapshotPath, err := snapshotter.CreateS3Snapshot(&snapshot, c, now)
+		logSnapshotError("aws", snapshotPath, err)
+	}
+	if c.GCP.Bucket != "" {
+		snapshotPath, err := snapshotter.CreateGCPSnapshot(&snapshot, c, now)
+		logSnapshotError("gcp", snapshotPath, err)
+	}
+	if c.Azure.ContainerName != "" {
+		snapshotPath, err := snapshotter.CreateAzureSnapshot(&snapshot, c, now)
+		logSnapshotError("azure", snapshotPath, err)
+	}
+
 }
 
 func logSnapshotError(dest, snapshotPath string, err error) {
