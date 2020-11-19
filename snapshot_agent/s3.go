@@ -39,50 +39,50 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 	o, err := s.Uploader.Upload(input)
 	if err != nil {
 		return "", err
-	} else {
-		if config.Retain > 0 && config.AWS.StaticSnapshotName == "" {
-			existingSnapshotList, err := s.S3Client.ListObjects(&s3.ListObjectsInput{
-				Bucket: &config.AWS.Bucket,
-				Prefix: aws.String(keyPrefix),
-			})
-			if err != nil {
-				log.Errorln("Error when retrieving existing snapshots for delete action.")
-				return o.Location, err
-			}
-			existingSnapshots := make([]s3.Object, 0)
+	}
 
-			for _, obj := range existingSnapshotList.Contents {
-				if strings.HasSuffix(*obj.Key, ".snap") && strings.Contains(*obj.Key, "raft_snapshot-") {
-					existingSnapshots = append(existingSnapshots, *obj)
-				}
-			}
+	if config.Retain > 0 && config.AWS.StaticSnapshotName == "" {
+		existingSnapshotList, err := s.S3Client.ListObjects(&s3.ListObjectsInput{
+			Bucket: &config.AWS.Bucket,
+			Prefix: aws.String(keyPrefix),
+		})
+		if err != nil {
+			log.Errorln("Error when retrieving existing snapshots for delete action.")
+			return o.Location, err
+		}
+		existingSnapshots := make([]s3.Object, 0)
 
-			if len(existingSnapshots) <= int(config.Retain) {
-				return o.Location, nil
-			}
-
-			timestamp := func(o1, o2 *s3.Object) bool {
-				return o1.LastModified.Before(*o2.LastModified)
-			}
-			s3By(timestamp).sort(existingSnapshots)
-			if len(existingSnapshots)-int(config.Retain) <= 0 {
-				return o.Location, nil
-			}
-			snapshotsToDelete := existingSnapshots[0 : len(existingSnapshots)-int(config.Retain)]
-
-			for i := range snapshotsToDelete {
-				_, err := s.S3Client.DeleteObject(&s3.DeleteObjectInput{
-					Bucket: &config.AWS.Bucket,
-					Key:    snapshotsToDelete[i].Key,
-				})
-				if err != nil {
-					log.Errorf("Error when deleting snapshot %s\n.", *snapshotsToDelete[i].Key)
-					return o.Location, err
-				}
+		for _, obj := range existingSnapshotList.Contents {
+			if strings.HasSuffix(*obj.Key, ".snap") && strings.Contains(*obj.Key, "raft_snapshot-") {
+				existingSnapshots = append(existingSnapshots, *obj)
 			}
 		}
-		return o.Location, nil
+
+		if len(existingSnapshots) <= int(config.Retain) {
+			return o.Location, nil
+		}
+
+		timestamp := func(o1, o2 *s3.Object) bool {
+			return o1.LastModified.Before(*o2.LastModified)
+		}
+		s3By(timestamp).sort(existingSnapshots)
+		if len(existingSnapshots)-int(config.Retain) <= 0 {
+			return o.Location, nil
+		}
+		snapshotsToDelete := existingSnapshots[0 : len(existingSnapshots)-int(config.Retain)]
+
+		for i := range snapshotsToDelete {
+			_, err := s.S3Client.DeleteObject(&s3.DeleteObjectInput{
+				Bucket: &config.AWS.Bucket,
+				Key:    snapshotsToDelete[i].Key,
+			})
+			if err != nil {
+				log.Errorf("Error when deleting snapshot %s\n.", *snapshotsToDelete[i].Key)
+				return o.Location, err
+			}
+		}
 	}
+	return o.Location, nil
 }
 
 // implements a Sort interface for s3 objects

@@ -23,38 +23,39 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.ReadWriter, config *config.C
 	})
 	if err != nil {
 		return "", err
-	} else {
-		if config.Retain > 0 {
-			deleteCtx := context.Background()
-			res, err := s.AzureUploader.ListBlobsFlatSegment(deleteCtx, azblob.Marker{}, azblob.ListBlobsSegmentOptions{
-				Prefix:     "raft_snapshot-",
-				MaxResults: 500,
-			})
+	}
+
+	if config.Retain > 0 {
+		deleteCtx := context.Background()
+		res, err := s.AzureUploader.ListBlobsFlatSegment(deleteCtx, azblob.Marker{}, azblob.ListBlobsSegmentOptions{
+			Prefix:     "raft_snapshot-",
+			MaxResults: 500,
+		})
+		if err != nil {
+			log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
+			return url, err
+		}
+		blobs := res.Segment.BlobItems
+		timestamp := func(o1, o2 *azblob.BlobItem) bool {
+			return o1.Properties.LastModified.Before(o2.Properties.LastModified)
+		}
+		azureBy(timestamp).sort(blobs)
+		if len(blobs)-int(config.Retain) <= 0 {
+			return url, nil
+		}
+		blobsToDelete := blobs[0 : len(blobs)-int(config.Retain)]
+
+		for _, b := range blobsToDelete {
+			val := s.AzureUploader.NewBlockBlobURL(b.Name)
+			val.Delete(deleteCtx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 			if err != nil {
-				log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
+				log.Errorln("Cannot delete old snapshot")
 				return url, err
 			}
-			blobs := res.Segment.BlobItems
-			timestamp := func(o1, o2 *azblob.BlobItem) bool {
-				return o1.Properties.LastModified.Before(o2.Properties.LastModified)
-			}
-			azureBy(timestamp).sort(blobs)
-			if len(blobs)-int(config.Retain) <= 0 {
-				return url, nil
-			}
-			blobsToDelete := blobs[0 : len(blobs)-int(config.Retain)]
-
-			for _, b := range blobsToDelete {
-				val := s.AzureUploader.NewBlockBlobURL(b.Name)
-				val.Delete(deleteCtx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
-				if err != nil {
-					log.Errorln("Cannot delete old snapshot")
-					return url, err
-				}
-			}
 		}
-		return url, nil
 	}
+
+	return url, nil
 }
 
 // implementation of Sort interface for s3 objects

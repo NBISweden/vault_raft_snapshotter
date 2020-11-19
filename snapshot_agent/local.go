@@ -19,36 +19,36 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 	err := ioutil.WriteFile(fileName, buf.Bytes(), 0644)
 	if err != nil {
 		return "", err
-	} else {
-		if config.Retain > 0 {
-			fileInfo, err := ioutil.ReadDir(config.Local.Path)
-			filesToDelete := make([]os.FileInfo, 0)
-			for _, file := range fileInfo {
-				if strings.Contains(file.Name(), "raft_snapshot-") && strings.HasSuffix(file.Name(), ".snap") {
-					filesToDelete = append(filesToDelete, file)
-				}
-			}
-			if err != nil {
-				log.Errorln("Unable to read file directory to delete old snapshots")
-				return fileName, err
-			}
-			timestamp := func(f1, f2 *os.FileInfo) bool {
-				file1 := *f1
-				file2 := *f2
-				return file1.ModTime().Before(file2.ModTime())
-			}
-			fileBy(timestamp).sort(filesToDelete)
-			if len(filesToDelete) <= int(config.Retain) {
-				return fileName, nil
-			}
-			filesToDelete = filesToDelete[0 : len(filesToDelete)-int(config.Retain)]
-			for _, f := range filesToDelete {
-				log.Debugf("Deleting old snapshot %s", f.Name())
-				os.Remove(fmt.Sprintf("%s/%s", config.Local.Path, f.Name()))
+	}
+
+	if config.Retain > 0 {
+		fileInfo, err := ioutil.ReadDir(config.Local.Path)
+		filesToDelete := make([]os.FileInfo, 0)
+		for _, file := range fileInfo {
+			if strings.Contains(file.Name(), "raft_snapshot-") && strings.HasSuffix(file.Name(), ".snap") {
+				filesToDelete = append(filesToDelete, file)
 			}
 		}
-		return fileName, nil
+		if err != nil {
+			log.Errorln("Unable to read file directory to delete old snapshots")
+			return fileName, err
+		}
+		timestamp := func(f1, f2 *os.FileInfo) bool {
+			file1 := *f1
+			file2 := *f2
+			return file1.ModTime().Before(file2.ModTime())
+		}
+		fileBy(timestamp).sort(filesToDelete)
+		if len(filesToDelete) <= int(config.Retain) {
+			return fileName, nil
+		}
+		filesToDelete = filesToDelete[0 : len(filesToDelete)-int(config.Retain)]
+		for _, f := range filesToDelete {
+			log.Debugf("Deleting old snapshot %s", f.Name())
+			os.Remove(fmt.Sprintf("%s/%s", config.Local.Path, f.Name()))
+		}
 	}
+	return fileName, nil
 }
 
 // implements a Sort interface for fileInfo
