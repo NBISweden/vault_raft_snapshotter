@@ -66,7 +66,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 	return fileName, nil
 }
 
-// implementation of Sort interface for s3 objects
+// implements a Sort interface for s3 objects
 type GCPBy func(f1, f2 *storage.ObjectAttrs) bool
 
 func (by GCPBy) Sort(objects []storage.ObjectAttrs) {

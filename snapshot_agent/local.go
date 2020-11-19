@@ -50,7 +50,7 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 	}
 }
 
-// implementation of Sort interface for fileInfo
+// implements a Sort interface for fileInfo
 type By func(f1, f2 *os.FileInfo) bool
 
 func (by By) Sort(files []os.FileInfo) {

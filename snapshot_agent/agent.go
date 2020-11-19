@@ -22,6 +22,7 @@ import (
 	vaultApi "github.com/hashicorp/vault/api"
 )
 
+// Snapshotter primary struct
 type Snapshotter struct {
 	API             *vaultApi.Client
 	Uploader        *s3manager.Uploader
@@ -31,6 +32,7 @@ type Snapshotter struct {
 	TokenExpiration time.Time
 }
 
+// NewSnapshotter creates a new snaphotter instance
 func NewSnapshotter(config *config.Configuration) (*Snapshotter, error) {
 	snapshotter := &Snapshotter{}
 	err := snapshotter.ConfigureVaultClient(config)
@@ -95,6 +97,7 @@ func (s *Snapshotter) SetClientTokenFromFile(config *config.Configuration) error
 	return nil
 }
 
+// SetClientTokenFromAppRole sets the token via appRole login
 func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) error {
 	data := map[string]interface{}{
 		"role_id":   config.Vault.RoleID,

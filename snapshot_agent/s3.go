@@ -85,7 +85,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.ReadWriter, config *config.Conf
 	}
 }
 
-// implementation of Sort interface for s3 objects
+// implements a Sort interface for s3 objects
 type S3By func(f1, f2 *s3.Object) bool
 
 func (by S3By) Sort(objects []s3.Object) {
