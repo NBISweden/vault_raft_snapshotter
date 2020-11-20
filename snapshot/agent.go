@@ -71,7 +71,9 @@ func (s *Snapshotter) configureVaultClient(config *config.Configuration) error {
 		ClientKey:  config.Vault.ClientKey,
 		Insecure:   config.Vault.Insecure,
 	}
-	vaultConfig.ConfigureTLS(tlsConfig)
+	if err := vaultConfig.ConfigureTLS(tlsConfig); err != nil {
+		return err
+	}
 	api, err := vaultApi.NewClient(vaultConfig)
 	if err != nil {
 		return err
@@ -79,9 +81,13 @@ func (s *Snapshotter) configureVaultClient(config *config.Configuration) error {
 	s.API = api
 
 	if config.Vault.RoleID != "" && config.Vault.SecretID != "" {
-		s.SetClientTokenFromAppRole(config)
+		if err := s.SetClientTokenFromAppRole(config); err != nil {
+			return err
+		}
 	} else {
-		s.setClientTokenFromFile(config)
+		if err := s.setClientTokenFromFile(config); err != nil {
+			return err
+		}
 	}
 
 	return nil
