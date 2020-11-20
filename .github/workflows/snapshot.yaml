@@ -1,0 +1,66 @@
+---
+name: snapshots
+on: [pull_request]
+
+jobs:
+  snapshot:
+    name: snapshot
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Start Vault servers
+        run: cd dev_utils && docker-compose up -d
+
+      - name: get vault binary
+        run: sudo docker cp V1:/bin/vault /usr/local/bin/
+
+      - name: Setup vault instances
+        run: bash dev_utils/setup_vault.sh
+
+      - name: Export the token fro the first Vault instance
+        run: export V1_TOKEN=$(VAULT_ADDR="https://127.0.0.1:8200" vault login -field=token "$(cat v1.init | grep Root | cut -d ' ' -f4)")
+
+      - name: Create token for snapshotter
+        run: VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8200" VAULT_TOKEN=$V1_TOKEN vault token create -orphan -policy=snapshotter -ttl=60m -field=token > token
+
+      - name: Create secret id for approle
+        run: |
+          ROLEID=$(VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8200" VAULT_TOKEN=$V1_TOKEN vault read -field=role_id auth/approle/role/snapshotter/role-id)
+          SECRETID=$(VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8200" VAULT_TOKEN=$V1_TOKEN vault write -f -field=secret_id auth/approle/role/snapshotter/secret-id)
+          sed -i "s/ROLEID/$ROLEID/g" dev_utils/config-approle.json
+          sed -i "s/SECRETID/$SECRETID/g" dev_utils/config-approle.json
+
+      - name: Run snapshotter with token
+        run: go run main.go ./dev_utils/config-token.json
+
+      - name: Modify secret
+        run: VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8200" VAULT_TOKEN=$V1_TOKEN vault kv put kv/my-secret my-value=!notSecret
+
+      - name: Resore first snapshot
+        run: |
+          V2_ROOT_TOKEN=$(grep Root V2.init | cut -d ' ' -f4)
+          export V2_TOKEN=$(VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8300" vault login -field=token $V2_ROOT_TOKEN)
+          VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8300" VAULT_TOKEN=$V2_TOKEN vault operator raft snapshot restore -force $(ls raft_snapshot-* | head -1)
+
+      - name: Unseal resored vault instance
+        run: |
+          V1_UNSEALKEY=$(grep Unseal V1.init | cut -d ' ' -f4)
+          VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8300" vault operator unseal $V1_UNSEALKEY
+
+      - name: Wait for active state
+        run: |
+          until docker exec V2 vault status | grep active;
+          do sleep 1;
+          done
+
+      - name: Retrieve first secret
+        run: |
+          V1_ROOT_TOKEN=$(grep Root V1.init | cut -d ' ' -f4)
+          export V1_TOKEN=$(VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8300" vault login -field=token $V1_ROOT_TOKEN)
+          VALUE=$(VAULT_CACERT="dev_utils/ca.crt" VAULT_ADDR="https://127.0.0.1:8300" VAULT_TOKEN=$V1_TOKEN vault kv get -field=my-value kv/my-secret)
+          if [ $VALUE -ne "s3cr3t" ]; then
+            exit 1
+          fi
