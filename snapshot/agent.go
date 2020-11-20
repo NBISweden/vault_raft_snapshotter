@@ -123,7 +123,7 @@ func (s *Snapshotter) configureS3(config *config.Configuration) error {
 		awsConfig.Endpoint = aws.String(config.AWS.Endpoint)
 	}
 
-	if config.AWS.S3ForcePathStyle != false {
+	if config.AWS.S3ForcePathStyle {
 		awsConfig.S3ForcePathStyle = aws.Bool(config.AWS.S3ForcePathStyle)
 	}
 
