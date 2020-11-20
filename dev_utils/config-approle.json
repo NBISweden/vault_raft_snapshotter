@@ -1,0 +1,11 @@
+{
+    "retain": 5,
+    "local_storage": {
+        "path": "."
+    },
+    "vault_config": {
+        "role_id": "ROLEID",
+        "secret_id": "SECRETID",
+        "ca_cert": "dev_utils/ca.crt"
+    }
+}

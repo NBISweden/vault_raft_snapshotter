@@ -1,0 +1,12 @@
+{
+    "log_level": "debug",
+    "retain": 5,
+    "frequency": "1h",
+    "local_storage": {
+        "path": "."
+    },
+    "vault_config": {
+        "token_file": "token",
+        "ca_cert": "dev_utils/ca.crt"
+    }
+}

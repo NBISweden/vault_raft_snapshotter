@@ -1,0 +1,44 @@
+version: "3.7"
+services:
+  vault-1:
+    container_name: V1
+    image: vault:1.5.5
+    command: server
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./:/vault/config/:ro
+      - ./ca.crt:/etc/ssl/certs/ca-certificate.crt:ro
+    environment:
+      - VAULT_CACERT=/vault/config/ca.crt
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - VAULT_API_ADDR=https://10.5.0.6:8200
+      - SKIP_SETCAP=true
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.6
+  vault-2:
+    container_name: V2
+    image: vault:1.5.5
+    command: server
+    ports:
+      - "8300:8200"
+    volumes:
+      - ./:/vault/config/:ro
+      - ./ca.crt:/etc/ssl/certs/ca-certificate.crt:ro
+    environment:
+      - VAULT_CACERT=/vault/config/ca.crt
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - VAULT_API_ADDR=https://10.5.0.9:8200
+      - SKIP_SETCAP=true
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.9
+
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
