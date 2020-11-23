@@ -1,69 +1,34 @@
-![Build](https://github.com/Lucretius/vault_raft_snapshot_agent/workflows/Build/badge.svg?branch=master)
+# Raft Snapshotter
 
-# Raft Snapshot Agent
-
-Raft Snapshot Agent is a Go binary that is meant to run alongside every member of a Vault cluster and will take periodic snapshots of the Raft database and write it to the desired location.  It's configuration is meant to somewhat parallel that of the [Consul Snapshot Agent](https://www.consul.io/docs/commands/snapshot/agent.html) so many of the same configuration properties you see there will be present here.
-
-## "High Availability" explained
-It works in an "HA" way as follows:
-1) Each running daemon checks the IP address of the machine its running on.
-2) If this IP address matches that of the leader node, it will be responsible for performing snapshotting.
-3) The other binaries simply continue checking, on each snapshot interval, to see if they have become the leader.
-
-In this way, the daemon will always run on the leader Raft node.
-
-Another way to do this, which would allow us to run the snapshot agent anywhere, is to simply have the daemons form their own Raft cluster, but this approach seemed much more cumbersome.
+Raft Snapshotter is a Go binary that is meant to run as a cronjob and will take periodic snapshots of the Raft database and write it to the desired location.
 
 ## Running
 
-The recommended way of running this daemon is using systemctl, since it handles restarts and failure scenarios quite well.  To learn more about systemctl, checkout [this article](https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units).  begin, create the following file at `/etc/systemd/system/snapshot.service`:
-
-```
-[Unit]
-Description="An Open Source Snapshot Service for Raft"
-Documentation=https://github.com/Lucretius/vault_raft_snapshot_agent/
-Requires=network-online.target
-After=network-online.target
-ConditionFileNotEmpty=/etc/vault.d/snapshot.json
-
-[Service]
-Type=simple
-User=vault
-Group=vault
-ExecStart=/usr/local/bin/vault_raft_snapshot_agent
-ExecReload=/usr/local/bin/vault_raft_snapshot_agent
-KillMode=process
-Restart=on-failure
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Your configuration is assumed to exist at `/etc/vault.d/snapshot.json` and the actual daemon binary at `/usr/local/bin/vault_raft_snapshot_agent`.
-
-Then just run:
-
-```
-sudo systemctl enable snapshot
-sudo systemctl start snapshot
-```
-
-If your configuration is right and Vault is running on the same host as the agent you will see one of the following:
-
-`Not running on leader node, skipping.` or `Successfully created <type> snapshot to <location>`, depending on if the daemon runs on the leader's host or not.
-
 ## Configuration
 
-`addr` The address of the Vault cluster.  This is used to check the Vault cluster leader IP, as well as generate snapshots.
+`retain` The number of backups to keep.
 
-`retain` The number of backups to retain.
+`log_level` Set level of log verbosity.
 
-`frequency` How often to run the snapshot agent.  Examples: `30s`, `1h`.  See https://golang.org/pkg/time/#ParseDuration for a full list of valid time units.
+### Vault config
 
-`role_id` Specifies the role_id used to call the Vault API.  See the authentication steps below.
+Either AppRole or token file is required
 
-`secret_id` Specifies the secret_id used to call the Vault API.
+`address` The address of the Vault cluster. This is used to check the Vault cluster leader IP, as well as generate snapshots.
+
+`ca_cert` Specifies the certificate to validate against vault.
+
+`client_cert` The client certificate used when connecting to Vault.
+
+`client_key` The client key used when connecting to Vault.
+
+`insecure` Ignore TLS checks. Only for testing purposes
+
+`role_id` Specifies the role_id used to authenticate against vault. See the authentication steps below.
+
+`secret_id` Specifies the secret_id used to authenticate against vault. See the authentication steps below.
+
+`token_file` Specifies the token used to call the Vault API. Useful with the Vault Agent auto-auth functionality
 
 ### Storage options
 
@@ -81,25 +46,27 @@ Note that if you specify more than one storage option, *all* options will be wri
 
 `path` - Fully qualified path, not including file name, for where the snapshot should be written.  i.e. /etc/raft/snapshots
 
-#### AWS Storage
+#### S3 Storage
 
-`access_key_id` - Recommended to use the standard `AWS_ACCESS_KEY_ID` env var, but its possible to specify this in the config
+`access_key` - The access key used for S3 authentication
 
-`secret_access_key` - Recommended to use the standard `SECRET_ACCESS_KEY` env var, but its possible to specify this in the config
+`secret_key` - The secret key used for S3 authentication
 
-`s3_endpoint` - S3 compatible storage endpoint (ex: http://127.0.0.1:9000)
+`endpoint` - S3 compatible storage endpoint (ex: `http://127.0.0.1:9000`)
 
-`s3_force_path_style` - Needed if your S3 Compatible storage support only path-style or you would like to use S3's FIPS Endpoint.
+`force_path_style` - Needed if your S3 Compatible storage support only path-style or you would like to use S3's FIPS Endpoint.
 
-`s3_region` - S3 region as is required for programmatic interaction with AWS
+`region` - S3 region as is required for programmatic interaction with AWS, default is `us-east-1`
 
-`s3_bucket` - bucket to store snapshots in (required for AWS writes to work)
+`bucket` - bucket to store snapshots in (required for AWS writes to work)
 
-`s3_key_prefix` - Prefix to store s3 snapshots in.  Defaults to `raft_snapshots`
+`key_prefix` - Prefix to store s3 snapshots in.  Defaults to `raft_snapshots`
 
-`s3_server_side_encryption` -  Encryption is **off** by default.  Set to true to turn on AWS' AES256 encryption.  Support for AWS KMS keys is not currently supported.
+`server_side_encryption` -  Encryption is **off** by default.  Set to true to turn on AWS' AES256 encryption.  Support for AWS KMS keys is not currently supported.
 
-`s3_static_snapshot_name` - Use a single, static key for s3 snapshots as opposed to autogenerated timestamped-based ones.  Unless S3 versioning is used, this means there will only ever be a single point-in-time snapshot stored in S3.
+`static_snapshot_name` - Use a single, static key for s3 snapshots as opposed to autogenerated timestamped-based ones.  Unless S3 versioning is used, this means there will only ever be a single point-in-time snapshot stored in S3.
+
+`ca_cert` - Path to Ca certificate used to validate the S3 backend
 
 #### Google Storage
 
@@ -113,14 +80,11 @@ Note that if you specify more than one storage option, *all* options will be wri
 
 `container_name` The name of the blob container to write to
 
-
 ## Authentication
 
-You must do some quick initial setup prior to being able to use the Snapshot Agent.  This involves the following:
+You must do some quick initial setup prior to being able to use the Snapshotter.
 
-`vault login` with an admin user.
-Create the following policy `vault policy write snapshot ./my_policies/snapshot_policy.hcl`
- where `snapshot_policy.hcl` is:
+The following policy is required
 
 ```hcl
 path "/sys/storage/raft/snapshot"
@@ -129,15 +93,16 @@ path "/sys/storage/raft/snapshot"
 }
 ```
 
-Then run:
-```
+If AppRole is used, the role and secret id is gernerated like this:
+
+```command
 vault write auth/approle/role/snapshot token_policies="snapshot"
-vault read auth/approle/role/snapshot/role-id
-vault write -f auth/approle/role/snapshot/secret-id
+vault read -field=role_id auth/approle/role/snapshot/role-id
+vault write -f -field=secret_id  auth/approle/role/snapshot/secret-id
 ```
 
-and copy your secret and role ids, and place them into the snapshot file.  The snapshot agent will use them to request client tokens, so that it can interact with your Vault cluster.  The above policy is the minimum required policy to be able to generate snapshots.  The snapshot agent will automatically renew the token when it is going to expire.
+Copy your secret and role ids, and place them into the config file. The snapshotter will use them to request client tokens, so that it can interact with your Vault cluster. The above policy is the minimum required policy to be able to generate snapshots. The snapshotter will automatically renew the token when it is going to expire.
 
-The AppRole allows the snapshot agent to automatically rotate tokens to avoid long-lived credentials.
+The AppRole allows the snapshotter to automatically rotate tokens to avoid long-lived credentials.
 
 To learn more about AppRole's and why this project chose to use them, see [the Vault docs](https://www.vaultproject.io/docs/auth/approle)
