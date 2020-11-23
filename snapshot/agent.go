@@ -2,11 +2,15 @@ package snapshot
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -123,7 +127,14 @@ func (s *Snapshotter) configureS3(config *config.Configuration) error {
 		config.AWS.Region = "us-east-1"
 	}
 
-	awsConfig := &aws.Config{Region: aws.String(config.AWS.Region)}
+	s3Transport := transportConfigS3(config)
+	client := http.Client{Transport: s3Transport}
+
+	awsConfig := &aws.Config{
+		Region:     aws.String(config.AWS.Region),
+		HTTPClient: &client,
+	}
+
 
 	if config.AWS.AccessKey != "" && config.AWS.SecretKey != "" {
 		awsConfig.Credentials = credentials.NewStaticCredentials(config.AWS.AccessKey, config.AWS.SecretKey, "")
@@ -175,4 +186,35 @@ func (s *Snapshotter) configureAzure(config *config.Configuration) error {
 
 	s.AzureUploader = azblob.NewContainerURL(*URL, p)
 	return nil
+}
+
+func transportConfigS3(config *config.Configuration) http.RoundTripper {
+	cfg := new(tls.Config)
+
+	// Enforce TLS1.2 or higher
+	cfg.MinVersion = 2
+
+	// Read system CAs
+	var systemCAs, _ = x509.SystemCertPool()
+	if reflect.DeepEqual(systemCAs, x509.NewCertPool()) {
+		log.Debug("creating new CApool")
+		systemCAs = x509.NewCertPool()
+	}
+	cfg.RootCAs = systemCAs
+
+	if config.AWS.CACert != "" {
+		cacert, e := ioutil.ReadFile(config.AWS.CACert) // #nosec this file comes from our config
+		if e != nil {
+			log.Fatalf("failed to append %q to RootCAs: %v", cacert, e)
+		}
+		if ok := cfg.RootCAs.AppendCertsFromPEM(cacert); !ok {
+			log.Debug("no certs appended, using system certs only")
+		}
+	}
+
+	var trConfig http.RoundTripper = &http.Transport{
+		TLSClientConfig:   cfg,
+		ForceAttemptHTTP2: true}
+
+	return trConfig
 }

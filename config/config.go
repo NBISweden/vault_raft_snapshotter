@@ -50,6 +50,7 @@ type S3Config struct {
 	SSE                bool   `json:"s3_server_side_encryption"`
 	StaticSnapshotName string `json:"s3_static_snapshot_name"`
 	S3ForcePathStyle   bool   `json:"s3_force_path_style"`
+	CACert             string `json:"ca_cert"`
 }
 
 // VaultConfig is the configuration for connecting to Vault
