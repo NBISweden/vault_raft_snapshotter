@@ -119,6 +119,10 @@ func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) er
 }
 
 func (s *Snapshotter) configureS3(config *config.Configuration) error {
+	if config.AWS.Region == "" {
+		config.AWS.Region = "us-east-1"
+	}
+
 	awsConfig := &aws.Config{Region: aws.String(config.AWS.Region)}
 
 	if config.AWS.AccessKey != "" && config.AWS.SecretKey != "" {
