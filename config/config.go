@@ -41,8 +41,8 @@ type LocalConfig struct {
 // S3Config is the configuration for S3 snapshots
 type S3Config struct {
 	Uploader           *s3manager.Uploader
-	AccessKeyID        string `json:"access_key_id"`
-	SecretAccessKey    string `json:"secret_access_key"`
+	AccessKey          string `json:"access_key"`
+	SecretKey          string `json:"secret_key"`
 	Endpoint           string `json:"s3_endpoint"`
 	Region             string `json:"s3_region"`
 	Bucket             string `json:"s3_bucket"`

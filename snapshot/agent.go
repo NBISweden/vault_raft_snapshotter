@@ -121,8 +121,8 @@ func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) er
 func (s *Snapshotter) configureS3(config *config.Configuration) error {
 	awsConfig := &aws.Config{Region: aws.String(config.AWS.Region)}
 
-	if config.AWS.AccessKeyID != "" && config.AWS.SecretAccessKey != "" {
-		awsConfig.Credentials = credentials.NewStaticCredentials(config.AWS.AccessKeyID, config.AWS.SecretAccessKey, "")
+	if config.AWS.AccessKey != "" && config.AWS.SecretKey != "" {
+		awsConfig.Credentials = credentials.NewStaticCredentials(config.AWS.AccessKey, config.AWS.SecretKey, "")
 	}
 
 	if config.AWS.Endpoint != "" {
