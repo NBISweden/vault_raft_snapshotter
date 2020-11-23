@@ -3,6 +3,14 @@
     "local_storage": {
         "path": "."
     },
+    "aws_storage": {
+        "access_key": "access",
+        "secret_key": "secretkey",
+        "bucket": "backup",
+        "endpoint": "localhost:9000",
+        "ca_cert": "dev_utils/ca.crt",
+        "force_path_style": true
+    },
     "vault_config": {
         "role_id": "ROLEID",
         "secret_id": "SECRETID",
