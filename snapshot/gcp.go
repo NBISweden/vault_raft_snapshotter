@@ -32,16 +32,20 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 		deleteCtx := context.Background()
 		query := &storage.Query{Prefix: "raft_snapshot-"}
 		it := s.GCPBucket.Objects(deleteCtx, query)
+		
 		var files []storage.ObjectAttrs
+
 		for {
 			attrs, err := it.Next()
 			if err == iterator.Done {
 				break
 			}
+
 			if err != nil {
 				log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
 				return fileName, err
 			}
+
 			files = append(files, *attrs)
 		}
 
@@ -50,13 +54,16 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 		}
 
 		gcpBy(timestamp).sort(files)
+
 		if len(files)-int(config.Retain) <= 0 {
 			return fileName, nil
 		}
+
 		snapshotsToDelete := files[0 : len(files)-int(config.Retain)]
 
 		for _, ss := range snapshotsToDelete {
 			obj := s.GCPBucket.Object(ss.Name)
+
 			err := obj.Delete(deleteCtx)
 			if err != nil {
 				log.Errorln("Cannot delete old snapshot")
@@ -64,6 +71,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 			}
 		}
 	}
+
 	return fileName, nil
 }
 

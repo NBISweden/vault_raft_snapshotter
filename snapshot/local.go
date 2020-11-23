@@ -16,6 +16,7 @@ import (
 // CreateLocalSnapshot writes snapshot to disk location
 func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Configuration, currentTs int64) (string, error) {
 	fileName := fmt.Sprintf("%s/raft_snapshot-%d.snap", config.Local.Path, currentTs)
+
 	err := ioutil.WriteFile(fileName, buf.Bytes(), 0644) //nolint:gosec
 	if err != nil {
 		return "", err
@@ -23,31 +24,40 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 
 	if config.Retain > 0 {
 		fileInfo, err := ioutil.ReadDir(config.Local.Path)
+		if err != nil {
+			log.Errorln("Unable to read file directory to delete old snapshots")
+			return fileName, err
+		}
+
 		filesToDelete := make([]os.FileInfo, 0)
+		
 		for _, file := range fileInfo {
 			if strings.Contains(file.Name(), "raft_snapshot-") && strings.HasSuffix(file.Name(), ".snap") {
 				filesToDelete = append(filesToDelete, file)
 			}
 		}
-		if err != nil {
-			log.Errorln("Unable to read file directory to delete old snapshots")
-			return fileName, err
-		}
+
 		timestamp := func(f1, f2 *os.FileInfo) bool {
 			file1 := *f1
 			file2 := *f2
+
 			return file1.ModTime().Before(file2.ModTime())
 		}
+
 		fileBy(timestamp).sort(filesToDelete)
+
 		if len(filesToDelete) <= int(config.Retain) {
 			return fileName, nil
 		}
+
 		filesToDelete = filesToDelete[0 : len(filesToDelete)-int(config.Retain)]
+
 		for _, f := range filesToDelete {
 			log.Debugf("Deleting old snapshot %s", f.Name())
 			os.Remove(fmt.Sprintf("%s/%s", config.Local.Path, f.Name()))
 		}
 	}
+
 	return fileName, nil
 }
 

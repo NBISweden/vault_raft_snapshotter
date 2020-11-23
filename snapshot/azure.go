@@ -18,6 +18,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.Reader, config *config.Confi
 	ctx := context.Background()
 	url := fmt.Sprintf("raft_snapshot-%d.snap", currentTs)
 	blob := s.AzureUploader.NewBlockBlobURL(url)
+
 	_, err := azblob.UploadStreamToBlockBlob(ctx, reader, blob, azblob.UploadStreamToBlockBlobOptions{
 		BufferSize: 4 * 1024 * 1024,
 		MaxBuffers: 16,
@@ -28,6 +29,7 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.Reader, config *config.Confi
 
 	if config.Retain > 0 {
 		deleteCtx := context.Background()
+
 		res, err := s.AzureUploader.ListBlobsFlatSegment(deleteCtx, azblob.Marker{}, azblob.ListBlobsSegmentOptions{
 			Prefix:     "raft_snapshot-",
 			MaxResults: 500,
@@ -36,18 +38,22 @@ func (s *Snapshotter) CreateAzureSnapshot(reader io.Reader, config *config.Confi
 			log.Errorln("Unable to iterate through bucket to find old snapshots to delete")
 			return url, err
 		}
+
 		blobs := res.Segment.BlobItems
 		timestamp := func(o1, o2 *azblob.BlobItemInternal) bool {
 			return o1.Properties.LastModified.Before(o2.Properties.LastModified)
 		}
 		azureBy(timestamp).sort(blobs)
+
 		if len(blobs)-int(config.Retain) <= 0 {
 			return url, nil
 		}
+
 		blobsToDelete := blobs[0 : len(blobs)-int(config.Retain)]
 
 		for _, b := range blobsToDelete {
 			val := s.AzureUploader.NewBlockBlobURL(b.Name)
+
 			_, err := val.Delete(deleteCtx, azblob.DeleteSnapshotsOptionInclude, azblob.BlobAccessConditions{})
 			if err != nil {
 				log.Errorln("Cannot delete old snapshot")

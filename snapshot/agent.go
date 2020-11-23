@@ -40,28 +40,33 @@ type Snapshotter struct {
 // NewSnapshotter creates a new snaphotter instance
 func NewSnapshotter(config *config.Configuration) (*Snapshotter, error) {
 	snapshotter := &Snapshotter{}
+
 	err := snapshotter.configureVaultClient(config)
 	if err != nil {
 		return nil, err
 	}
+
 	if config.AWS.Bucket != "" {
 		err = snapshotter.configureS3(config)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	if config.GCP.Bucket != "" {
 		err = snapshotter.configureGCP(config)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	if config.Azure.ContainerName != "" {
 		err = snapshotter.configureAzure(config)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return snapshotter, nil
 }
 
@@ -70,6 +75,7 @@ func (s *Snapshotter) configureVaultClient(config *config.Configuration) error {
 	if config.Vault.Address != "" {
 		vaultConfig.Address = config.Vault.Address
 	}
+
 	tlsConfig := &vaultApi.TLSConfig{
 		CACert:     config.Vault.CACert,
 		ClientCert: config.Vault.ClientCert,
@@ -79,10 +85,12 @@ func (s *Snapshotter) configureVaultClient(config *config.Configuration) error {
 	if err := vaultConfig.ConfigureTLS(tlsConfig); err != nil {
 		return err
 	}
+
 	api, err := vaultApi.NewClient(vaultConfig)
 	if err != nil {
 		return err
 	}
+
 	s.API = api
 
 	if config.Vault.RoleID != "" && config.Vault.SecretID != "" {
@@ -103,8 +111,10 @@ func (s *Snapshotter) setClientTokenFromFile(config *config.Configuration) error
 	if err != nil {
 		fmt.Print(err)
 	}
+
 	s.API.SetToken(string(t))
 	s.TokenExpiration = time.Now().Add(time.Duration(time.Hour))
+
 	return nil
 }
 
@@ -114,12 +124,15 @@ func (s *Snapshotter) SetClientTokenFromAppRole(config *config.Configuration) er
 		"role_id":   config.Vault.RoleID,
 		"secret_id": config.Vault.SecretID,
 	}
+
 	resp, err := s.API.Logical().Write("auth/approle/login", data)
 	if err != nil {
 		return fmt.Errorf("error logging into AppRole auth backend: %s", err)
 	}
+
 	s.API.SetToken(resp.Auth.ClientToken)
 	s.TokenExpiration = time.Now().Add(time.Duration((time.Second * time.Duration(resp.Auth.LeaseDuration)) / 2))
+
 	return nil
 }
 
@@ -151,16 +164,20 @@ func (s *Snapshotter) configureS3(config *config.Configuration) error {
 	sess := session.Must(session.NewSession(awsConfig))
 	s.S3Client = s3.New(sess)
 	s.Uploader = s3manager.NewUploader(sess)
+
 	return nil
 }
 
 func (s *Snapshotter) configureGCP(config *config.Configuration) error {
 	ctx := context.Background()
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return err
 	}
+
 	s.GCPBucket = client.Bucket(config.GCP.Bucket)
+
 	return nil
 }
 
@@ -169,22 +186,27 @@ func (s *Snapshotter) configureAzure(config *config.Configuration) error {
 	if os.Getenv("AZURE_STORAGE_ACCOUNT") != "" {
 		accountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 	}
+
 	accountKey := config.Azure.AccountKey
 	if os.Getenv("AZURE_STORAGE_ACCESS_KEY") != "" {
 		accountKey = os.Getenv("AZURE_STORAGE_ACCESS_KEY")
 	}
+
 	if len(accountName) == 0 || len(accountKey) == 0 {
 		return errors.New("Invalid Azure configuration")
 	}
+
 	credential, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		log.Fatal("Invalid credentials with error: " + err.Error())
 	}
+
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{})
 	URL, _ := url.Parse(
 		fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, config.Azure.ContainerName))
 
 	s.AzureUploader = azblob.NewContainerURL(*URL, p)
+
 	return nil
 }
 
@@ -198,8 +220,10 @@ func transportConfigS3(config *config.Configuration) http.RoundTripper {
 	var systemCAs, _ = x509.SystemCertPool()
 	if reflect.DeepEqual(systemCAs, x509.NewCertPool()) {
 		log.Debug("creating new CApool")
+
 		systemCAs = x509.NewCertPool()
 	}
+
 	cfg.RootCAs = systemCAs
 
 	if config.AWS.CACert != "" {
@@ -207,6 +231,7 @@ func transportConfigS3(config *config.Configuration) http.RoundTripper {
 		if e != nil {
 			log.Fatalf("failed to append %q to RootCAs: %v", cacert, e)
 		}
+
 		if ok := cfg.RootCAs.AppendCertsFromPEM(cacert); !ok {
 			log.Debug("no certs appended, using system certs only")
 		}

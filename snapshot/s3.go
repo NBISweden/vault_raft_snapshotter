@@ -52,6 +52,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.Reader, config *config.Configur
 			log.Errorln("Error when retrieving existing snapshots for delete action.")
 			return o.Location, err
 		}
+
 		existingSnapshots := make([]s3.Object, 0)
 
 		for _, obj := range existingSnapshotList.Contents {
@@ -67,10 +68,13 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.Reader, config *config.Configur
 		timestamp := func(o1, o2 *s3.Object) bool {
 			return o1.LastModified.Before(*o2.LastModified)
 		}
+
 		s3By(timestamp).sort(existingSnapshots)
+
 		if len(existingSnapshots)-int(config.Retain) <= 0 {
 			return o.Location, nil
 		}
+
 		snapshotsToDelete := existingSnapshots[0 : len(existingSnapshots)-int(config.Retain)]
 
 		for i := range snapshotsToDelete {
@@ -84,6 +88,7 @@ func (s *Snapshotter) CreateS3Snapshot(reader io.Reader, config *config.Configur
 			}
 		}
 	}
+
 	return o.Location, nil
 }
 

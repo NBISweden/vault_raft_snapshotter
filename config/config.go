@@ -71,25 +71,31 @@ func ReadConfig() (*Configuration, error) {
 	if len(os.Args) > 1 {
 		file = os.Args[1]
 	}
+
 	cBytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Fatalf("Cannot read configuration file: %v", err.Error())
 	}
+
 	c := &Configuration{}
+
 	err = json.Unmarshal(cBytes, &c)
 	if err != nil {
 		log.Fatalf("Cannot parse configuration file: %v", err.Error())
 	}
 	// set default log level to trace
 	log.SetLevel(log.TraceLevel)
+
 	if c.LogLevel != "" {
 		intLevel, err := log.ParseLevel(c.LogLevel)
 		if err != nil {
 			log.Errorf("Log level '%s' not supported, setting to 'trace'", c.LogLevel)
 			intLevel = log.TraceLevel
 		}
+
 		log.SetLevel(intLevel)
 		log.Infof("Setting log level to '%s'", c.LogLevel)
 	}
+
 	return c, nil
 }
