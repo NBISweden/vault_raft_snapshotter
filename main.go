@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
-	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot"
+	"vault_raft_snapshotter/config"
+	"vault_raft_snapshotter/snapshot"
 )
 
 func main() {

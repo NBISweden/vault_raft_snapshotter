@@ -15,9 +15,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"vault_raft_snapshotter/config"
+
 	"cloud.google.com/go/storage"
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"

@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
+	"vault_raft_snapshotter/config"
 )
 
 // CreateLocalSnapshot writes snapshot to disk location

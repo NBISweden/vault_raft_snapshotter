@@ -8,8 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"vault_raft_snapshotter/config"
+
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 )
 
 // CreateAzureSnapshot writes snapshot to azure blob storage

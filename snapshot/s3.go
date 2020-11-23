@@ -8,7 +8,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
+	"vault_raft_snapshotter/config"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"

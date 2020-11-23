@@ -8,8 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"vault_raft_snapshotter/config"
+
 	"cloud.google.com/go/storage"
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
 	"google.golang.org/api/iterator"
 )
 
