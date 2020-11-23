@@ -136,7 +136,6 @@ func (s *Snapshotter) configureS3(config *config.Configuration) error {
 		HTTPClient: &client,
 	}
 
-
 	if config.AWS.AccessKey != "" && config.AWS.SecretKey != "" {
 		awsConfig.Credentials = credentials.NewStaticCredentials(config.AWS.AccessKey, config.AWS.SecretKey, "")
 	}

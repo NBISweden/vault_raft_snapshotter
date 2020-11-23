@@ -16,7 +16,7 @@ import (
 // CreateLocalSnapshot writes snapshot to disk location
 func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Configuration, currentTs int64) (string, error) {
 	fileName := fmt.Sprintf("%s/raft_snapshot-%d.snap", config.Local.Path, currentTs)
-	err := ioutil.WriteFile(fileName, buf.Bytes(), 0644)
+	err := ioutil.WriteFile(fileName, buf.Bytes(), 0644) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
