@@ -11,7 +11,9 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"time"
+	"unicode"
 
 	log "github.com/sirupsen/logrus"
 
@@ -112,7 +114,11 @@ func (s *Snapshotter) setClientTokenFromFile(config *config.Configuration) error
 		fmt.Print(err)
 	}
 
-	s.API.SetToken(string(t))
+	token := strings.TrimFunc(string(t), func(r rune) bool {
+		return !unicode.IsGraphic(r)
+	})
+
+	s.API.SetToken(token)
 	s.TokenExpiration = time.Now().Add(time.Duration(time.Hour))
 
 	return nil
