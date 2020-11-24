@@ -30,7 +30,7 @@ func (s *Snapshotter) CreateLocalSnapshot(buf *bytes.Buffer, config *config.Conf
 		}
 
 		filesToDelete := make([]os.FileInfo, 0)
-		
+
 		for _, file := range fileInfo {
 			if strings.Contains(file.Name(), "raft_snapshot-") && strings.HasSuffix(file.Name(), ".snap") {
 				filesToDelete = append(filesToDelete, file)

@@ -32,7 +32,7 @@ func (s *Snapshotter) CreateGCPSnapshot(b *bytes.Buffer, config *config.Configur
 		deleteCtx := context.Background()
 		query := &storage.Query{Prefix: "raft_snapshot-"}
 		it := s.GCPBucket.Objects(deleteCtx, query)
-		
+
 		var files []storage.ObjectAttrs
 
 		for {
