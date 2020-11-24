@@ -23,10 +23,6 @@ func main() {
 		log.Fatalln("Failed to create snapshotter")
 	}
 
-	if err != nil {
-		log.Fatalln("Error retrieving Current instance IP.  Verify internet connectivity.")
-	}
-
 	if snapshotter.TokenExpiration.Before(time.Now()) && (c.Vault.RoleID != "" && c.Vault.SecretID != "") {
 		if err = snapshotter.SetClientTokenFromAppRole(c); err != nil {
 			log.Fatalf("Unable to login to vault")
